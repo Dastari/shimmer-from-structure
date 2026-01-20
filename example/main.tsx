@@ -439,14 +439,14 @@ function App() {
       </section>
 
       {/* Revenue Chart Section */}
-      <section className="dashboard-section">
+      {/* <section className="dashboard-section">
         <Shimmer
           loading={loadingChart}
           templateProps={{ data: chartTemplate }}
         >
           <RevenueChart data={chartData || chartTemplate} />
         </Shimmer>
-      </section>
+      </section> */}
 
       {/* Main Content Grid */}
       <div className="content-grid">

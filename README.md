@@ -14,6 +14,9 @@ Traditional shimmer libraries require you to:
 - ✅ Generates shimmer effects that match actual dimensions
 - ✅ Zero maintenance - works with any layout changes
 - ✅ Works with complex nested structures
+- ✅ Supports dynamic data with `templateProps`
+- ✅ Preserves container backgrounds during loading
+- ✅ Auto-detects border-radius from your CSS
 
 ## 🚀 Installation
 
@@ -27,25 +30,67 @@ pnpm add shimmer-from-structure
 
 ## 📖 Basic Usage
 
+### Static Content
+
+For components with hardcoded/static content:
+
 ```tsx
 import { Shimmer } from 'shimmer-from-structure';
 
-function UserProfile({ loading, user }) {
+function UserCard() {
   return (
-    <Shimmer loading={loading}>
-      <div className="profile">
-        <img src={user.avatar} alt={user.name} />
-        <h2>{user.name}</h2>
-        <p>{user.bio}</p>
+    <Shimmer loading={isLoading}>
+      <div className="card">
+        <img src="avatar.jpg" className="avatar" />
+        <h2>John Doe</h2>
+        <p>Software Engineer</p>
       </div>
     </Shimmer>
   );
 }
 ```
 
-That's it! The shimmer will automatically adapt to your component's structure.
+### Dynamic Content with `templateProps`
 
-## 🎨 API
+For components that receive dynamic data via props, use `templateProps` to provide mock data for skeleton generation:
+
+```tsx
+import { Shimmer } from 'shimmer-from-structure';
+
+// Your component that accepts props
+const UserCard = ({ user }) => (
+  <div className="card">
+    <img src={user.avatar} className="avatar" />
+    <h2>{user.name}</h2>
+    <p>{user.role}</p>
+  </div>
+);
+
+// Template data for the skeleton
+const userTemplate = {
+  name: 'Loading...',
+  role: 'Loading role...',
+  avatar: 'placeholder.jpg',
+};
+
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  return (
+    <Shimmer 
+      loading={loading} 
+      templateProps={{ user: userTemplate }}
+    >
+      <UserCard user={user || userTemplate} />
+    </Shimmer>
+  );
+}
+```
+
+The `templateProps` object is spread onto the first child component when loading, allowing it to render with mock data for measurement.
+
+## 🎨 API Reference
 
 ### `<Shimmer>` Props
 
@@ -53,94 +98,133 @@ That's it! The shimmer will automatically adapt to your component's structure.
 |------|------|---------|-------------|
 | `loading` | `boolean` | `true` | Whether to show shimmer effect or actual content |
 | `children` | `React.ReactNode` | required | The content to render/measure |
-| `shimmerColor` | `string` | `'#e0e0e0'` | Color of the shimmer wave |
-| `backgroundColor` | `string` | `'#f0f0f0'` | Background color of shimmer blocks |
+| `shimmerColor` | `string` | `'rgba(255,255,255,0.15)'` | Color of the shimmer wave |
+| `backgroundColor` | `string` | `'rgba(255,255,255,0.08)'` | Background color of shimmer blocks |
 | `duration` | `number` | `1.5` | Animation duration in seconds |
-| `borderRadius` | `number` | `4` | Border radius for shimmer blocks (in pixels) |
+| `fallbackBorderRadius` | `number` | `4` | Border radius (px) for elements with no CSS border-radius |
+| `templateProps` | `Record<string, unknown>` | - | Props to inject into first child for skeleton rendering |
 
-### Example with Custom Styling
+### Example with All Props
 
 ```tsx
 <Shimmer
   loading={isLoading}
-  shimmerColor="#d0d0ff"
-  backgroundColor="#e8e8ff"
+  shimmerColor="rgba(255, 255, 255, 0.2)"
+  backgroundColor="rgba(255, 255, 255, 0.1)"
   duration={2}
-  borderRadius={8}
+  fallbackBorderRadius={8}
+  templateProps={{ 
+    user: userTemplate,
+    settings: settingsTemplate 
+  }}
 >
-  <YourComponent />
+  <MyComponent user={user} settings={settings} />
 </Shimmer>
 ```
 
 ## 🔧 How It Works
 
-The library solves the dimension measurement challenge through a clever approach:
+1. **Visible Container Rendering**: When `loading={true}`, your component renders with transparent text but **visible container backgrounds**
+2. **Template Props Injection**: If `templateProps` is provided, it's spread onto the first child so dynamic components can render
+3. **DOM Measurement**: Uses `useLayoutEffect` to synchronously measure all leaf elements via `getBoundingClientRect()`
+4. **Border Radius Detection**: Automatically captures each element's computed `border-radius` from CSS
+5. **Shimmer Generation**: Creates absolutely-positioned shimmer blocks matching measured dimensions
+6. **Animation**: Applies smooth gradient animation that sweeps across each block
 
-1. **Hidden Rendering**: When `loading={true}`, it renders your component invisibly off-screen using absolute positioning
-2. **DOM Measurement**: Uses `useLayoutEffect` to synchronously measure all elements via `getBoundingClientRect()`
-3. **Structure Extraction**: Recursively walks the DOM tree to capture position, size, and element information
-4. **Shimmer Generation**: Creates positioned shimmer blocks that match the measured dimensions
-5. **Animation**: Applies a smooth gradient animation that sweeps across each block
+### Key Features
 
-### Key Technical Decisions
-
-- **`useLayoutEffect` over `useEffect`**: Ensures measurements happen synchronously after DOM updates but before paint, preventing flicker
-- **`getBoundingClientRect()`**: Provides precise pixel-perfect dimensions including padding and borders
-- **Off-screen rendering**: Positioned at `-9999px` with `visibility: hidden` to measure without showing
-- **Absolute positioning**: Shimmer blocks use absolute positioning to perfectly overlay the measured positions
+- **Container backgrounds visible**: Unlike `opacity: 0`, we use `color: transparent` so card backgrounds/borders show during loading
+- **Auto border-radius**: Circular avatars get circular shimmer blocks automatically
+- **Fallback radius**: Text elements (which have `border-radius: 0`) use `fallbackBorderRadius` to avoid sharp rectangles
+- **Dark-mode friendly**: Default colors use semi-transparent whites that work on any background
 
 ## 🎭 Examples
 
-### Loading a User Card
+### Dashboard with Multiple Sections
+
+Each section can have its own independent loading state:
 
 ```tsx
-<Shimmer loading={isLoading}>
-  <div className="user-card">
-    <img src={avatar} className="avatar" />
-    <div>
-      <h3>{name}</h3>
-      <p>{title}</p>
-      <p>{location}</p>
-    </div>
-  </div>
+function Dashboard() {
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
+  
+  return (
+    <>
+      {/* User profile section */}
+      <Shimmer loading={loadingUser} templateProps={{ user: userTemplate }}>
+        <UserProfile user={user} />
+      </Shimmer>
+      
+      {/* Stats section - with custom colors */}
+      <Shimmer 
+        loading={loadingStats} 
+        templateProps={{ stats: statsTemplate }}
+        shimmerColor="rgba(20, 184, 166, 0.2)"
+      >
+        <StatsGrid stats={stats} />
+      </Shimmer>
+    </>
+  );
+}
+```
+
+### Transactions List
+
+```tsx
+<Shimmer 
+  loading={loadingTransactions}
+  templateProps={{ transactions: transactionsTemplate }}
+>
+  <TransactionsList transactions={transactions} />
 </Shimmer>
 ```
 
-### Loading an Article
+### Team Members Grid
 
 ```tsx
-<Shimmer loading={isLoading}>
-  <article>
-    <h1>{article.title}</h1>
-    <p className="meta">{article.author} • {article.readTime}</p>
-    <p>{article.excerpt}</p>
-    <button>Read More</button>
-  </article>
+<Shimmer loading={loadingTeam} templateProps={{ members: teamTemplate }}>
+  <TeamMembers members={team} />
 </Shimmer>
-```
-
-### Loading a Product Grid
-
-```tsx
-<div className="product-grid">
-  {products.map(product => (
-    <Shimmer key={product.id} loading={!product.loaded}>
-      <ProductCard product={product} />
-    </Shimmer>
-  ))}
-</div>
 ```
 
 ## 🎯 Best Practices
 
-1. **Use with actual component structure**: Don't create separate skeleton components - wrap your real component
-2. **Apply to granular components**: Wrap individual cards/items rather than entire lists for better UX
-3. **Maintain consistent sizing**: Ensure your components have stable dimensions for better shimmer accuracy
-4. **Avoid highly dynamic layouts**: Works best with components that have predictable structures
+### 1. Use `templateProps` for Dynamic Data
+When your component receives data via props, always provide `templateProps` with mock data that matches the expected structure.
+
+### 2. Match Template Structure to Real Data
+Ensure your template data has the same array length and property structure as real data for accurate shimmer layout.
+
+### 3. Use Individual Shimmer Components
+Wrap each section in its own Shimmer for independent loading states:
+
+```tsx
+// ✅ Good - independent loading
+<Shimmer loading={loadingUsers}><UserList /></Shimmer>
+<Shimmer loading={loadingPosts}><PostList /></Shimmer>
+
+// ❌ Avoid - all-or-nothing loading
+<Shimmer loading={loadingUsers || loadingPosts}>
+  <UserList />
+  <PostList />
+</Shimmer>
+```
+
+### 4. Consider Element Widths
+Block elements like `<h1>`, `<p>` take full container width. If you want shimmer to match text width:
+```css
+.title {
+  width: fit-content;
+}
+```
+
+### 5. Provide Container Dimensions
+For async components (like charts), ensure containers have explicit dimensions so shimmer has something to measure.
 
 ## ⚡ Performance Considerations
 
-- The measurement happens only when transitioning to loading state
+- Measurement happens only when `loading` changes to `true`
 - Uses `useLayoutEffect` for synchronous measurement (no flicker)
 - Minimal re-renders - only updates when loading state or children change
 - Lightweight DOM measurements using native browser APIs
@@ -168,19 +252,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🐛 Known Limitations
 
-- Works best with visible, block-level elements
-- May not capture elements with `display: none` or zero dimensions
-- Requires components to be renderable in hidden state
-- Animation is CSS-based (no fine-grained control over shimmer path)
+- **Async components**: Components that render asynchronously (like charts using `ResponsiveContainer`) may need explicit container dimensions
+- **Zero-dimension elements**: Elements with `display: none` or zero dimensions won't be captured
+- **SVG internals**: Only the outer `<svg>` element is captured, not internal paths/shapes
 
 ## 🚧 Roadmap
 
-- [ ] Support for image aspect ratio detection
+- [x] Dynamic data support via `templateProps`
+- [x] Auto border-radius detection
+- [x] Container background visibility
+- [ ] Better async component support
 - [ ] Customizable shimmer direction (vertical, diagonal)
-- [ ] Smart grouping of nearby elements
 - [ ] React Native support
 - [ ] Vue.js adapter
-- [ ] Svelte adapter
 
 ---
 
