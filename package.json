@@ -1,6 +1,6 @@
 {
   "name": "shimmer-from-structure",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A React shimmer/skeleton library that automatically adapts to your component's runtime structure",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -22,27 +22,27 @@
     "placeholder",
     "runtime"
   ],
-  "author": "",
+  "author": "Olebogeng Mbedzi",
   "license": "MIT",
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.0.9",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/ui": "^4.0.17",
     "jsdom": "^27.4.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "recharts": "^3.6.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.0.17",
-    "recharts": "^3.6.0"
+    "vitest": "^4.0.17"
   }
 }
