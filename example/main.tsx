@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Shimmer } from '../src';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import './main.css';
 
 // =============================================================================
@@ -45,6 +54,12 @@ interface TeamMember {
   avatar: string;
 }
 
+interface ChartDataPoint {
+  name: string;
+  revenue: number;
+  orders: number;
+}
+
 // =============================================================================
 // TEMPLATE DATA (Mock data for shimmer skeletons)
 // =============================================================================
@@ -84,6 +99,16 @@ const teamTemplate: TeamMember[] = [
   { id: '4', name: 'Loading...', role: 'Backend Developer', avatar: 'https://via.placeholder.com/40' },
 ];
 
+const chartTemplate: ChartDataPoint[] = [
+  { name: 'Mon', revenue: 3000, orders: 30 },
+  { name: 'Tue', revenue: 4500, orders: 45 },
+  { name: 'Wed', revenue: 3800, orders: 38 },
+  { name: 'Thu', revenue: 5200, orders: 52 },
+  { name: 'Fri', revenue: 6100, orders: 61 },
+  { name: 'Sat', revenue: 7000, orders: 70 },
+  { name: 'Sun', revenue: 5500, orders: 55 },
+];
+
 // =============================================================================
 // REAL DATA (Simulated API responses)
 // =============================================================================
@@ -121,6 +146,16 @@ const realTeam: TeamMember[] = [
   { id: '2', name: 'Emily Davis', role: 'UX Designer', avatar: 'https://i.pravatar.cc/40?img=9' },
   { id: '3', name: 'Alex Rivera', role: 'Backend Engineer', avatar: 'https://i.pravatar.cc/40?img=12' },
   { id: '4', name: 'Jordan Lee', role: 'DevOps', avatar: 'https://i.pravatar.cc/40?img=15' },
+];
+
+const realChartData: ChartDataPoint[] = [
+  { name: 'Mon', revenue: 4200, orders: 42 },
+  { name: 'Tue', revenue: 5800, orders: 58 },
+  { name: 'Wed', revenue: 4900, orders: 49 },
+  { name: 'Thu', revenue: 7200, orders: 72 },
+  { name: 'Fri', revenue: 8400, orders: 84 },
+  { name: 'Sat', revenue: 9100, orders: 91 },
+  { name: 'Sun', revenue: 6800, orders: 68 },
 ];
 
 // =============================================================================
@@ -175,6 +210,56 @@ const TransactionsList = ({ transactions }: { transactions: Transaction[] }) => 
           </div>
         </div>
       ))}
+    </div>
+  </div>
+);
+
+// Revenue Chart
+const RevenueChart = ({ data }: { data: ChartDataPoint[] }) => (
+  <div className="revenue-chart">
+    <h3 className="section-title">Weekly Revenue</h3>
+    <div className="chart-container">
+      <ResponsiveContainer width="100%" height={250}>
+        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+          <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={12} />
+          <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'rgba(26, 26, 46, 0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              color: '#fff',
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="#14b8a6"
+            fillOpacity={1}
+            fill="url(#colorRevenue)"
+            strokeWidth={2}
+          />
+          <Area
+            type="monotone"
+            dataKey="orders"
+            stroke="#06b6d4"
+            fillOpacity={1}
+            fill="url(#colorOrders)"
+            strokeWidth={2}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   </div>
 );
@@ -234,6 +319,8 @@ function App() {
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
   const [activity, setActivity] = useState<ActivityItem[] | null>(null);
   const [team, setTeam] = useState<TeamMember[] | null>(null);
+  const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null);
+  const [loadingChart, setLoadingChart] = useState(true);
 
   // Simulate independent API calls with different response times
   useEffect(() => {
@@ -249,13 +336,19 @@ function App() {
       setLoadingStats(false);
     }, 1200);
 
-    // Team loads third
+    // Chart loads third
+    setTimeout(() => {
+      setChartData(realChartData);
+      setLoadingChart(false);
+    }, 1400);
+
+    // Team loads fourth
     setTimeout(() => {
       setTeam(realTeam);
       setLoadingTeam(false);
     }, 1600);
 
-    // Activity loads fourth
+    // Activity loads fifth
     setTimeout(() => {
       setActivity(realActivity);
       setLoadingActivity(false);
@@ -272,11 +365,13 @@ function App() {
   const handleReload = () => {
     setLoadingUser(true);
     setLoadingStats(true);
+    setLoadingChart(true);
     setLoadingTransactions(true);
     setLoadingActivity(true);
     setLoadingTeam(true);
     setUser(null);
     setStats(null);
+    setChartData(null);
     setTransactions(null);
     setActivity(null);
     setTeam(null);
@@ -291,6 +386,11 @@ function App() {
       setStats(realStats);
       setLoadingStats(false);
     }, 1200);
+
+    setTimeout(() => {
+      setChartData(realChartData);
+      setLoadingChart(false);
+    }, 1400);
 
     setTimeout(() => {
       setTeam(realTeam);
@@ -335,6 +435,16 @@ function App() {
           templateProps={{ stats: statsTemplate }}
         >
           <StatsGrid stats={stats || statsTemplate} />
+        </Shimmer>
+      </section>
+
+      {/* Revenue Chart Section */}
+      <section className="dashboard-section">
+        <Shimmer
+          loading={loadingChart}
+          templateProps={{ data: chartTemplate }}
+        >
+          <RevenueChart data={chartData || chartTemplate} />
         </Shimmer>
       </section>
 

@@ -127,11 +127,24 @@ export const Shimmer: React.FC<ShimmerProps> = ({
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Hidden version to measure - rendered invisibly in place */}
+      {/* Inject styles for hiding text while preserving backgrounds */}
+      <style>{`
+        .shimmer-measure-container * {
+          color: transparent !important;
+          border-color: transparent !important;
+        }
+        .shimmer-measure-container img,
+        .shimmer-measure-container svg,
+        .shimmer-measure-container video {
+          opacity: 0;
+        }
+      `}</style>
+
+      {/* Children rendered with transparent text but visible container backgrounds */}
       <div
         ref={measureRef}
+        className="shimmer-measure-container"
         style={{
-          opacity: 0,
           pointerEvents: 'none',
         }}
         aria-hidden="true"
